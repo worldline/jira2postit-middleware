@@ -1,0 +1,16 @@
+{
+    "cors": {
+      "origin": ""
+    },
+    "session": {
+      "salt": "9VJXF9nDho",
+      "cookieMaxAge": 2000000
+    },
+    "app": {
+      "port": 8000,
+      "proxy": ""
+    },
+    "db": {
+      "path": "/usr/src/data/"
+    }
+}

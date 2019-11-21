@@ -1,0 +1,16 @@
+{
+  "cors": {
+    "origin": "https://localhost:4200"
+  },
+  "session": {
+    "salt": "Mw8LPjJCQH",
+    "cookieMaxAge": 6000000
+  },
+  "app": {
+    "port": 8000,
+    "proxy": ""
+  },
+  "db": {
+    "path": ""
+  }
+}
