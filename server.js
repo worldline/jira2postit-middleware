@@ -74,8 +74,6 @@ app.use(function (req, res) {
 // configures the https certificates
 const certificatePath = program.certificate || './build/cert/server.crt';
 const certificatePrivateKey = program.privateKey || './build/cert/server.key';
-console.log(certificatePath);
-console.log(certificatePrivateKey);
 var certOptions = {
   key: fs.readFileSync(path.resolve(certificatePrivateKey)),
   cert: fs.readFileSync(path.resolve(certificatePath))
