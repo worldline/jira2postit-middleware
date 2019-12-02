@@ -7,6 +7,7 @@ const low = require('lowdb');
 const FileSync = require('lowdb/adapters/FileSync');
 const program = require('commander');
 const adapter = new FileSync(config.get('db:path') + 'db.json');
+const DEBUG = process.env.NODE_ENV === 'development';
 
 const db = low(adapter)
 db.defaults({ configurations: [] })
@@ -21,6 +22,24 @@ if (proxyAddress) {
     agent.rejectUnauthorized = false;
     axios.defaults.httpsAgent = agent;
 }
+
+axios.interceptors.response.use((response) => {
+    console.log(`${response.status} ${response.request.method} ${response.request.path} for user: ${response.config.auth.username}`);
+    if (DEBUG) {
+        console.log(response.data);
+    }
+    return response;
+}, (error) => {
+    console.log(`Error: ${error.response.status} ${error.config.method} ${error.config.url} for user: ${error.config.auth.username}`);
+    if (error.message) {
+        console.log('Error', error.message);
+    }
+    if (DEBUG) {
+        console.log(error.response.data);
+    }
+
+    return Promise.reject(error);
+});
 
 exports.read_configuration = function(req, res) {
     const configuration = db.get('configurations')
@@ -54,21 +73,16 @@ exports.write_configuration = function(req, res) {
 }
 
 exports.login = function(req, res) {
-    console.log(req.body);
     axios
         .get(`/agile/1.0/board/${req.body.boardId}`, { auth: { 'username': `${req.body.username}`, 'password': `${req.body.password}` }})
         .then(response => {
-            console.log(response.headers)
-            console.log(response.status);
-            console.log(response.data);
             var user = new User(req.body.username, req.body.password);
             req.session.user = user;
             res.send(response.data);
             req.session.save();
         })
         .catch(error => {
-            console.log(error);
-            res.status(error.response.status).send('Sorry, your credentials or the board id are wrong!');
+            res.status(401).send('Sorry, your credentials or the board id are wrong!');
         });
 };
 
@@ -97,8 +111,6 @@ exports.read_issueTypes = function(req,res) {
                          'password': `${req.session.user.password}` }
                 })
             .then(response => {
-                console.log(response.status);
-                console.log(response.data);
                 let issueTypes = response.data.issueTypes.map(issueType => {
                     var type = {};
                     if (issueType.id) {
@@ -113,7 +125,6 @@ exports.read_issueTypes = function(req,res) {
                 res.send(issueTypes);
             })
             .catch(error => {
-                console.log(error);
                 res.status(error.response.status).send(response.data)
             });
     } else {
@@ -130,13 +141,10 @@ exports.read_sprints = function(req, res) {
                           'password': `${req.session.user.password}` }
                  })
             .then(response => {
-                console.log(response.status);
-                console.log(response.data);
                 res.setHeader('Content-Type', 'application/json');
                 res.send(response.data);
             })
             .catch(error => {
-                console.log(error);
                 res.status(error.response.status).send(response.data);
             });
     } else {
@@ -161,7 +169,6 @@ exports.read_sprintIssues = function(req, res) {
                     fields += `&fields=${estimationField}`
                 }
                 readPaginatedSprintIssues(boardId, sprintId, fields, req.session.user.name, req.session.user.password).then(data => {
-                    console.log(data);
                     var issues = formatSprintIssues(data, estimationField);
                     res.setHeader('Content-Type', 'application/json');
                     res.send(issues);
@@ -180,7 +187,6 @@ function readPaginatedSprintIssues(boardId, sprintId, fields, username, password
                     'password': `${password}` }
             })
         .then(response => {
-            console.log(response.status);
             data = data.concat(response.data.issues);
             if (data.length !== response.data.total) {
                 return readPaginatedSprintIssues(boardId, sprintId, fields, username, password, data, page + 1);
@@ -188,7 +194,6 @@ function readPaginatedSprintIssues(boardId, sprintId, fields, username, password
             return data;
         })
         .catch(error => {
-            console.log(error);
             res.status(error.response.status).send('Sorry, we cannot find that!');
         });
 }
@@ -234,13 +239,10 @@ exports.read_kanbanIssues = function(req, res) {
                          'password': `${req.session.user.password}` }
             })
             .then(response => {
-                console.log(response.status);
-                console.log(response.data);
                 let statusesGroupedByColumn = response.data.columnConfig.columns
                     .reduce((acc,cur) => acc.concat({'name': cur.name, 'statusIds': cur.statuses.map(status => status.id)}), [])
                     .filter(column => column.statusIds.length > 0);
                 const statuses = statusesGroupedByColumn.reduce((acc,cur) => acc.concat(cur.statusIds), []);
-                console.log("statuses" + statuses)
                 const jql = `status IN (${statuses.toString()})`
                 var estimationField
                 var fields = `fields=issuetype&fields=summary&fields=epic&fields=status&fields=components`
@@ -249,14 +251,12 @@ exports.read_kanbanIssues = function(req, res) {
                     fields += `&fields=${estimationField}`
                 }
                 readPaginatedKanbanIssues(boardId, fields, jql, req.session.user.name, req.session.user.password).then(data => {
-                    console.log("total length: " + data.length);
                     var issues = formatKanbanIssues(data, statusesGroupedByColumn, estimationField);
                     const columns = statusesGroupedByColumn.map(column => column.name);
                     const issuesGroupedByColumns = columns.map(column => {
                         var issueGroupedByColumn = {};
                         issueGroupedByColumn['name'] = column;
                         issueGroupedByColumn['issues'] = issues.filter(issue => column === issue.column);
-                        console.log("column " + column + " length: " + issueGroupedByColumn.issues.length)
                         return issueGroupedByColumn;
                     });
                     res.setHeader('Content-Type', 'application/json');
@@ -264,7 +264,6 @@ exports.read_kanbanIssues = function(req, res) {
                 });
             })
             .catch(error => {
-                console.log(error);
                 res.status(error.response.status).send(response.data);
             });
     } else {
@@ -280,7 +279,6 @@ function readPaginatedKanbanIssues(boardId, fields, jql, username, password, dat
                     'password': `${password}` }
             })
         .then(response => {
-            console.log(response.status);
             data = data.concat(response.data.issues);
             if (data.length !== response.data.total) {
                 return readPaginatedKanbanIssues(boardId, fields, jql, username, password, data, page + 1);
@@ -288,13 +286,12 @@ function readPaginatedKanbanIssues(boardId, fields, jql, username, password, dat
             return data;
         })
         .catch(error => {
-            console.log(error);
             res.status(error.response.status).send('Sorry, we cannot find that!');
         });
 }
 
 function formatKanbanIssues(data, statusesGroupedByColumn, estimationField) {
-    let reformattedData = data.map(issue => {
+    return data.map(issue => {
         delete issue.expand;
         delete issue.id;
         delete issue.self;
@@ -326,7 +323,6 @@ function formatKanbanIssues(data, statusesGroupedByColumn, estimationField) {
         }
         delete issue.fields;
     });
-    return data
 }
 
 function secondsToDhm(seconds) {
