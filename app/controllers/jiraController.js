@@ -322,6 +322,7 @@ function formatKanbanIssues(data, statusesGroupedByColumn, estimationField) {
             issue["complexity"] = formattedEstimation;
         }
         delete issue.fields;
+        return issue
     });
 }
 

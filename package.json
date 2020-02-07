@@ -6,7 +6,8 @@
   "scripts": {
     "test": "test",
     "start": "NODE_ENV=production node server.js",
-    "dev": "NODE_ENV=development nodemon server.js"
+    "dev": "NODE_ENV=development node server.js",
+    "auto-reload": "NODE_ENV=development nodemon server.js"
   },
   "repository": {
     "type": "git",

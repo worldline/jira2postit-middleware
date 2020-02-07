@@ -7,7 +7,7 @@ const path = require('path')
 const fs = require('fs')
 const https = require('https')
 const MemoryStore = require('memorystore')(session)
-var config = require('./app/configuration/configuration');
+var config = require('./app/configuration/configuration.js');
 const program = require('commander');
 
 program
