@@ -13,7 +13,9 @@ RUN npm install
 # RUN npm install --only=production
 
 # Bundle app source
-COPY server.js build app ./
+COPY server.js ./
+COPY build ./build/
+COPY app ./app/
 
 EXPOSE 8000
 

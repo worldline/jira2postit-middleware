@@ -63,4 +63,5 @@ If you have a local jira instance running on port 8081 and a front on port 4200 
 ```
 docker build -t jira-middleware .
 
-docker run -d -p 8000:8000 --name middleware -v tmp/data:/usr/src/data jira-middleware -j http://host.docker.internal:8081/rest -w https://localhost:4200
+docker run -d -p 8000:8000 --name middleware -v /tmp/data:/usr/src/data jira-middleware -j http://host.docker.internal:8081/rest -w https://localhost:4200
+
