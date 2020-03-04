@@ -21,5 +21,6 @@ module.exports = function(app) {
     app.route('/board/:boardId/settings')
         .get(controller.read_configuration)
         .post(controller.write_configuration);
-        
+    app.route('/board/:boardId')
+        .get(controller.read_boardType)   
 }

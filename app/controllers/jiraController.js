@@ -86,6 +86,26 @@ exports.login = function(req, res) {
         });
 };
 
+exports.read_boardType = function(req, res) {
+    const boardId = req.params['boardId']
+    if (req.session.user) {
+        axios
+            .get(`/agile/1.0/board/${boardId}`, 
+            { auth: { 'username': `${req.session.user.name}`,
+                    'password': `${req.session.user.password}` }
+            })
+            .then(response => {
+                res.setHeader('Content-Type', 'application/json');
+                res.send(response.data);
+            })
+            .catch(error => {
+                res.status(404).send('Sorry, the board id is wrong');
+            });
+    } else {
+        res.status(401).send()
+    }
+};
+
 exports.logout = function(req, res) {
     if (req.session.user) {
         req.session.destroy((err) => {
